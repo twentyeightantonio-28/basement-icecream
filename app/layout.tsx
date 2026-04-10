@@ -14,8 +14,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Basement Plays",
-  description: "Visual guessing games and hidden-object style challenges.",
+  metadataBase: new URL("https://basementplays.com"),
+  title: {
+    default: "Basement Plays | Visual Guessing Games",
+    template: "%s | Basement Plays",
+  },
+  description:
+    "Play visual guessing games and hidden-object style challenges inspired by gaming and pop culture.",
+  alternates: {
+    canonical: "./",
+  },
+  openGraph: {
+    title: "Basement Plays | Visual Guessing Games",
+    description:
+      "Play visual guessing games and hidden-object style challenges inspired by gaming and pop culture.",
+    url: "https://basementplays.com",
+    siteName: "Basement Plays",
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Basement Plays | Visual Guessing Games",
+    description:
+      "Play visual guessing games and hidden-object style challenges inspired by gaming and pop culture.",
+  },
 };
 
 export default function RootLayout({

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 
 const games = [
@@ -19,6 +20,47 @@ const games = [
   },
 ];
 
+const steps = [
+  {
+    title: "Explore the scene",
+    description:
+      "Open a game and scan the full image carefully. Every corner can hide a clue.",
+  },
+  {
+    title: "Spot the references",
+    description:
+      "Find champions, series, and other familiar details hidden across the artwork.",
+  },
+  {
+    title: "Test your knowledge",
+    description:
+      "Challenge yourself, compare attempts, and come back for harder modes later on.",
+  },
+];
+
+const testimonials = [
+  {
+    quote: "Surprisingly hard and really fun once you start spotting the details.",
+    author: "Early tester",
+  },
+  {
+    quote: "It's the perfect game to cast on the TV with your family!",
+    author: "Random player",
+  },
+];
+
+const roadmap = [
+  "Series Basement launch.",
+  "More universes and hidden-reference scenes.",
+  "Difficulty modes and replay-friendly challenge formats.",
+];
+
+export const metadata: Metadata = {
+  title: "Home",
+  description:
+    "Choose your next visual challenge. Spot hidden League champions or find iconic TV series.",
+};
+
 export default function HomePage() {
   return (
     <main
@@ -35,7 +77,6 @@ export default function HomePage() {
         style={{
           maxWidth: 1450,
           margin: "0 auto",
-          minHeight: "calc(100vh - 40px)",
           display: "flex",
           flexDirection: "column",
           gap: 20,
@@ -45,13 +86,13 @@ export default function HomePage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "flex-start",
             flexWrap: "wrap",
             gap: 16,
             padding: "8px 4px",
           }}
         >
-          <div>
+          <div style={{ maxWidth: 760 }}>
             <p
               style={{
                 margin: 0,
@@ -73,10 +114,23 @@ export default function HomePage() {
             >
               Choose your next visual challenge.
             </h1>
+            <p
+              style={{
+                margin: "18px 0 0",
+                maxWidth: 700,
+                color: "rgba(226,232,240,0.82)",
+                fontSize: "clamp(16px, 2vw, 20px)",
+                lineHeight: 1.6,
+              }}
+            >
+              Basement Plays is a collection of visual guessing games where you
+              search each scene for hidden gaming and pop culture references.
+            </p>
           </div>
 
-          <div
+          <p
             style={{
+              margin: 0,
               padding: "12px 16px",
               borderRadius: 999,
               background: "rgba(255,255,255,0.06)",
@@ -85,13 +139,12 @@ export default function HomePage() {
               fontWeight: 600,
             }}
           >
-            Can you get every pop culture references ?
-          </div>
+            Can you spot every pop culture reference?
+          </p>
         </header>
 
         <section
           style={{
-            flex: 1,
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
             gap: 20,
@@ -196,6 +249,7 @@ export default function HomePage() {
                   ) : (
                     <Link
                       href={game.href}
+                      className="play-button"
                       style={{
                         alignSelf: "flex-start",
                         marginTop: 8,
@@ -209,6 +263,9 @@ export default function HomePage() {
                             ? "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)"
                             : "linear-gradient(135deg, #f97316 0%, #ef4444 100%)",
                         boxShadow: "0 18px 40px rgba(0,0,0,0.28)",
+                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                        cursor: "pointer",
+                        display: "inline-block",
                       }}
                     >
                       PLAY
@@ -218,6 +275,258 @@ export default function HomePage() {
               </article>
             );
           })}
+        </section>
+
+        <section
+          style={{
+            marginTop: 8,
+            padding: "28px",
+            borderRadius: 28,
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+          }}
+        >
+          <div style={{ maxWidth: 820 }}>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: "rgba(148,163,184,0.82)",
+              }}
+            >
+              How it works
+            </p>
+            <h2
+              style={{
+                margin: "10px 0 0",
+                fontSize: "clamp(28px, 4vw, 42px)",
+                lineHeight: 1.05,
+              }}
+            >
+              Fast to start, hard to master.
+            </h2>
+            <p
+              style={{
+                margin: "14px 0 0",
+                maxWidth: 700,
+                color: "rgba(226,232,240,0.82)",
+                fontSize: 17,
+                lineHeight: 1.65,
+              }}
+            >
+              Each game is built around observation, memory, and pop culture
+              knowledge. The rules are simple, but the hidden details make every
+              scene more challenging than it looks.
+            </p>
+          </div>
+
+          <div
+            style={{
+              marginTop: 24,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 16,
+            }}
+          >
+            {steps.map((step, index) => (
+              <article
+                key={step.title}
+                style={{
+                  padding: 22,
+                  borderRadius: 22,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 999,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "rgba(99,102,241,0.18)",
+                    border: "1px solid rgba(99,102,241,0.22)",
+                    fontWeight: 800,
+                    marginBottom: 14,
+                  }}
+                >
+                  {index + 1}
+                </div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: 22,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {step.title}
+                </h3>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    color: "rgba(226,232,240,0.78)",
+                    lineHeight: 1.6,
+                    fontSize: 16,
+                  }}
+                >
+                  {step.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.15fr 0.85fr",
+            gap: 20,
+          }}
+        >
+          <article
+            style={{
+              padding: 28,
+              borderRadius: 28,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: "rgba(148,163,184,0.82)",
+              }}
+            >
+              Why players like it
+            </p>
+            <h2
+              style={{
+                margin: "10px 0 0",
+                fontSize: "clamp(26px, 3vw, 38px)",
+                lineHeight: 1.08,
+              }}
+            >
+              Small challenge, big “one more try” energy.
+            </h2>
+
+            <div
+              style={{
+                marginTop: 20,
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              {testimonials.map((item) => (
+                <blockquote
+                  key={item.quote}
+                  style={{
+                    margin: 0,
+                    padding: 20,
+                    borderRadius: 20,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 17,
+                      lineHeight: 1.65,
+                      color: "rgba(248,250,252,0.94)",
+                    }}
+                  >
+                    “{item.quote}”
+                  </p>
+                  <footer
+                    style={{
+                      marginTop: 12,
+                      color: "rgba(148,163,184,0.88)",
+                      fontSize: 14,
+                      fontWeight: 600,
+                    }}
+                  >
+                    — {item.author}
+                  </footer>
+                </blockquote>
+              ))}
+            </div>
+          </article>
+
+          <article
+            style={{
+              padding: 28,
+              borderRadius: 28,
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <p
+              style={{
+                margin: 0,
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: "0.14em",
+                color: "rgba(148,163,184,0.82)",
+              }}
+            >
+              What’s next
+            </p>
+            <h2
+              style={{
+                margin: "10px 0 0",
+                fontSize: "clamp(26px, 3vw, 38px)",
+                lineHeight: 1.08,
+              }}
+            >
+              Basement Plays is just getting started.
+            </h2>
+
+            <ul
+              style={{
+                margin: "20px 0 0",
+                padding: 0,
+                listStyle: "none",
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              {roadmap.map((item) => (
+                <li
+                  key={item}
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "flex-start",
+                    padding: 16,
+                    borderRadius: 18,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "rgba(226,232,240,0.84)",
+                    lineHeight: 1.55,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      marginTop: 8,
+                      background: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </article>
         </section>
       </div>
     </main>
