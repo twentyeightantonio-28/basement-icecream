@@ -3,85 +3,169 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+type Difficulty = "easy" | "medium" | "hard" | "superhard";
+
 type Item = {
   id: string;
   answers: string[];
   x: number;
   y: number;
+  difficulty: Difficulty;
+  splash?: string;
+};
+
+type RankTier = {
+  name:
+    | "Iron"
+    | "Bronze"
+    | "Silver"
+    | "Gold"
+    | "Platinum"
+    | "Emerald"
+    | "Diamond"
+    | "Master"
+    | "Grandmaster"
+    | "Challenger";
+  min: number;
+  color: string;
+  image: string;
 };
 
 const ITEMS: Item[] = [
-  { id: "Karthus", answers: ["karthus"], x: 33.1, y: 46.8 },
-  { id: "Rengar", answers: ["rengar"], x: 28.3, y: 80.1 },
-  { id: "Neeko", answers: ["neeko"], x: 19.1, y: 60.1 },
-  { id: "Ivern", answers: ["ivern"], x: 87.2, y: 56.5 },
-  { id: "Shaco", answers: ["shaco"], x: 50.2, y: 75.5 },
-  { id: "Nami", answers: ["nami"], x: 82.8, y: 89 },
-  { id: "Rakan", answers: ["rakan"], x: 35.1, y: 40.6 },
-  { id: "Yasuo", answers: ["yasuo"], x: 68.8, y: 41.3 },
-  { id: "Aurelion Sol", answers: ["aurelion sol", "aurelion_sol", "asol"], x: 36.4, y: 21.2 },
-  { id: "Tahm Kench", answers: ["tahm kench", "tahm_kench", "tahm"], x: 86.5, y: 66.8 },
-  { id: "Zyra", answers: ["zyra"], x: 25.6, y: 44.4 },
-  { id: "Samira", answers: ["samira"], x: 67.3, y: 47.5 },
-  { id: "Malphite", answers: ["malphite"], x: 17.5, y: 39.9 },
-  { id: "Teemo", answers: ["teemo"], x: 55.2, y: 79.4 },
-  { id: "Yuumi", answers: ["yuumi"], x: 4.6, y: 73 },
-  { id: "Jarvan IV", answers: ["jarvan", "jarvan iv", "jarvan 4", "j4"], x: 16.1, y: 28.5 },
-  { id: "Kai'sa", answers: ["kai'sa", "kaisa", "kai sa"], x: 6.2, y: 92.9 },
-  { id: "Ryze", answers: ["ryze"], x: 37.9, y: 85.5 },
-  { id: "Illaoi", answers: ["illaoi"], x: 98.9, y: 85.5 },
-  { id: "Zoe", answers: ["zoe"], x: 12.1, y: 61.2 },
-  { id: "Braum", answers: ["braum"], x: 46.2, y: 57.4 },
-  { id: "Twisted Fate", answers: ["twisted fate", "twisted_fate", "tf"], x: 64.9, y: 67.5 },
-  { id: "Leona", answers: ["leona"], x: 66, y: 57.9 },
-  { id: "Amumu", answers: ["amumu"], x: 36.7, y: 50.1 },
-  { id: "Pantheon", answers: ["pantheon", "panth"], x: 34.3, y: 38 },
-  { id: "Xayah", answers: ["xayah"], x: 33.6, y: 40.7 },
-  { id: "Evelynn", answers: ["evelynn", "eve", "evelyn"], x: 48.2, y: 37.9 },
-  { id: "Nautilus", answers: ["nautilus", "naut"], x: 78.1, y: 92.3 },
-  { id: "Blitzcrank", answers: ["blitzcrank", "blitz"], x: 31.7, y: 32.3 },
-  { id: "Darius", answers: ["darius"], x: 47.9, y: 23.9 },
-  { id: "Senna", answers: ["senna"], x: 27.4, y: 29.4 },
-  { id: "Heimerdinger", answers: ["heimerdinger", "heimer"], x: 61.8, y: 79.2 },
-  { id: "Bard", answers: ["bard"], x: 21.7, y: 57.6 },
-  { id: "Vi", answers: ["vi"], x: 36.7, y: 44.3 },
-  { id: "Elise", answers: ["elise"], x: 62.7, y: 47.2 },
-  { id: "Vayne", answers: ["vayne"], x: 59.6, y: 41.6 },
-  { id: "Sejuani", answers: ["sejuani", "sej"], x: 92.5, y: 63.2 },
-  { id: "Nidalee", answers: ["nidalee", "nida"], x: 63.6, y: 97.2 },
-  { id: "Sivir", answers: ["sivir"], x: 59.2, y: 91.9 },
-  { id: "Lulu", answers: ["lulu"], x: 93.2, y: 46.1 },
-  { id: "Katarina", answers: ["katarina", "kata"], x: 48.3, y: 93.5 },
-  { id: "Gwen", answers: ["gwen"], x: 69.4, y: 93.5 },
-  { id: "Gangplank", answers: ["gangplank", "gp"], x: 36.2, y: 94.3 },
-  { id: "Jax", answers: ["jax"], x: 41.3, y: 25.8 },
-  { id: "Alistar", answers: ["alistar"], x: 1.8, y: 67.9 },
-  { id: "Zilean", answers: ["zilean", "zil"], x: 68.2, y: 17.4 },
-  { id: "Master Yi", answers: ["master yi", "master_yi", "yi"], x: 21.6, y: 42.2 },
-  { id: "Twitch", answers: ["twitch"], x: 2.6, y: 83.3 },
-  { id: "Kennen", answers: ["kennen"], x: 9.9, y: 88.3 },
-  { id: "Poppy", answers: ["poppy"], x: 32, y: 57.4 },
-  { id: "Soraka", answers: ["soraka"], x: 26.6, y: 67.2 },
-  { id: "Caitlyn", answers: ["caitlyn", "cait"], x: 2.3, y: 95.8 },
-  { id: "Ashe", answers: ["ashe"], x: 83.9, y: 24.9 },
-  { id: "Ziggs", answers: ["ziggs"], x: 72, y: 74.8 },
-  { id: "Zac", answers: ["zac"], x: 69.3, y: 69.6 },
-  { id: "Fizz", answers: ["fizz"], x: 57.2, y: 68.3 },
-  { id: "Jinx", answers: ["jinx"], x: 71.8, y: 49 },
-  { id: "Annie", answers: ["annie"], x: 20.2, y: 74.9 },
-  { id: "Orianna", answers: ["orianna"], x: 58.2, y: 54.6 },
-  { id: "Malzahar", answers: ["malzahar", "malz"], x: 56.5, y: 29.5 },
-  { id: "Vex", answers: ["vex"], x: 5.7, y: 32.5 },
-  { id: "Seraphine", answers: ["seraphine", "sera"], x: 72.3, y: 58.6 },
-  { id: "Diana", answers: ["diana"], x: 47.5, y: 17.8 },
-  { id: "Ekko", answers: ["ekko"], x: 13.2, y: 17.8 },
-  { id: "Jhin", answers: ["jhin"], x: 89.2, y: 37.4 },
-  { id: "Kindred", answers: ["kindred"], x: 22.3, y: 29 },
+  { id: "Karthus", answers: ["karthus"], x: 33.1, y: 46.8, difficulty: "medium" },
+  { id: "Rengar", answers: ["rengar"], x: 28.3, y: 80.1, difficulty: "hard" },
+  { id: "Neeko", answers: ["neeko"], x: 19.1, y: 60.1, difficulty: "medium" },
+  { id: "Ivern", answers: ["ivern"], x: 87.2, y: 56.5, difficulty: "hard" },
+  { id: "Shaco", answers: ["shaco"], x: 50.2, y: 75.5, difficulty: "hard" },
+  { id: "Nami", answers: ["nami"], x: 82.8, y: 89, difficulty: "easy" },
+  { id: "Rakan", answers: ["rakan"], x: 35.1, y: 40.6, difficulty: "medium" },
+  { id: "Yasuo", answers: ["yasuo"], x: 68.8, y: 41.3, difficulty: "easy" },
+  {
+    id: "Aurelion Sol",
+    answers: ["aurelion sol", "aurelion_sol", "asol"],
+    x: 36.4,
+    y: 21.2,
+    difficulty: "superhard",
+  },
+  {
+    id: "Tahm Kench",
+    answers: ["tahm kench", "tahm_kench", "tahm"],
+    x: 86.5,
+    y: 66.8,
+    difficulty: "hard",
+  },
+  { id: "Zyra", answers: ["zyra"], x: 25.6, y: 44.4, difficulty: "medium" },
+  { id: "Samira", answers: ["samira"], x: 67.3, y: 47.5, difficulty: "medium" },
+  { id: "Malphite", answers: ["malphite"], x: 17.5, y: 39.9, difficulty: "easy" },
+  { id: "Teemo", answers: ["teemo"], x: 55.2, y: 79.4, difficulty: "easy" },
+  { id: "Yuumi", answers: ["yuumi"], x: 4.6, y: 73, difficulty: "medium" },
+  {
+    id: "Jarvan IV",
+    answers: ["jarvan", "jarvan iv", "jarvan 4", "j4"],
+    x: 16.1,
+    y: 28.5,
+    difficulty: "hard",
+  },
+  { id: "Kai'sa", answers: ["kai'sa", "kaisa", "kai sa"], x: 6.2, y: 92.9, difficulty: "medium" },
+  { id: "Ryze", answers: ["ryze"], x: 37.9, y: 85.5, difficulty: "medium" },
+  { id: "Illaoi", answers: ["illaoi"], x: 98.9, y: 85.5, difficulty: "superhard" },
+  { id: "Zoe", answers: ["zoe"], x: 12.1, y: 61.2, difficulty: "medium" },
+  { id: "Braum", answers: ["braum"], x: 46.2, y: 57.4, difficulty: "medium" },
+  {
+    id: "Twisted Fate",
+    answers: ["twisted fate", "twisted_fate", "tf"],
+    x: 64.9,
+    y: 67.5,
+    difficulty: "hard",
+  },
+  { id: "Leona", answers: ["leona"], x: 66, y: 57.9, difficulty: "easy" },
+  { id: "Amumu", answers: ["amumu"], x: 36.7, y: 50.1, difficulty: "easy" },
+  { id: "Pantheon", answers: ["pantheon", "panth"], x: 34.3, y: 38, difficulty: "medium" },
+  { id: "Xayah", answers: ["xayah"], x: 33.6, y: 40.7, difficulty: "medium" },
+  { id: "Evelynn", answers: ["evelynn", "eve", "evelyn"], x: 48.2, y: 37.9, difficulty: "hard" },
+  { id: "Nautilus", answers: ["nautilus", "naut"], x: 78.1, y: 92.3, difficulty: "hard" },
+  { id: "Blitzcrank", answers: ["blitzcrank", "blitz"], x: 31.7, y: 32.3, difficulty: "medium" },
+  { id: "Darius", answers: ["darius"], x: 47.9, y: 23.9, difficulty: "easy" },
+  { id: "Senna", answers: ["senna"], x: 27.4, y: 29.4, difficulty: "medium" },
+  { id: "Heimerdinger", answers: ["heimerdinger", "heimer"], x: 61.8, y: 79.2, difficulty: "hard" },
+  { id: "Bard", answers: ["bard"], x: 21.7, y: 57.6, difficulty: "hard" },
+  { id: "Vi", answers: ["vi"], x: 36.7, y: 44.3, difficulty: "easy" },
+  { id: "Elise", answers: ["elise"], x: 62.7, y: 47.2, difficulty: "medium" },
+  { id: "Vayne", answers: ["vayne"], x: 59.6, y: 41.6, difficulty: "medium" },
+  { id: "Sejuani", answers: ["sejuani", "sej"], x: 92.5, y: 63.2, difficulty: "hard" },
+  { id: "Nidalee", answers: ["nidalee", "nida"], x: 63.6, y: 97.2, difficulty: "hard" },
+  { id: "Sivir", answers: ["sivir"], x: 59.2, y: 91.9, difficulty: "medium" },
+  { id: "Lulu", answers: ["lulu"], x: 93.2, y: 46.1, difficulty: "easy" },
+  { id: "Katarina", answers: ["katarina", "kata"], x: 48.3, y: 93.5, difficulty: "medium" },
+  { id: "Gwen", answers: ["gwen"], x: 69.4, y: 93.5, difficulty: "medium" },
+  { id: "Gangplank", answers: ["gangplank", "gp"], x: 36.2, y: 94.3, difficulty: "hard" },
+  { id: "Jax", answers: ["jax"], x: 41.3, y: 25.8, difficulty: "easy" },
+  { id: "Alistar", answers: ["alistar"], x: 1.8, y: 67.9, difficulty: "medium" },
+  { id: "Zilean", answers: ["zilean", "zil"], x: 68.2, y: 17.4, difficulty: "superhard" },
+  { id: "Master Yi", answers: ["master yi", "master_yi", "yi"], x: 21.6, y: 42.2, difficulty: "easy" },
+  { id: "Twitch", answers: ["twitch"], x: 2.6, y: 83.3, difficulty: "medium" },
+  { id: "Kennen", answers: ["kennen"], x: 9.9, y: 88.3, difficulty: "medium" },
+  { id: "Poppy", answers: ["poppy"], x: 32, y: 57.4, difficulty: "medium" },
+  { id: "Soraka", answers: ["soraka"], x: 26.6, y: 67.2, difficulty: "easy" },
+  { id: "Caitlyn", answers: ["caitlyn", "cait"], x: 2.3, y: 95.8, difficulty: "easy" },
+  { id: "Ashe", answers: ["ashe"], x: 83.9, y: 24.9, difficulty: "easy" },
+  { id: "Ziggs", answers: ["ziggs"], x: 72, y: 74.8, difficulty: "medium" },
+  { id: "Zac", answers: ["zac"], x: 69.3, y: 69.6, difficulty: "medium" },
+  { id: "Fizz", answers: ["fizz"], x: 57.2, y: 68.3, difficulty: "medium" },
+  { id: "Jinx", answers: ["jinx"], x: 71.8, y: 49, difficulty: "easy" },
+  { id: "Annie", answers: ["annie"], x: 20.2, y: 74.9, difficulty: "easy" },
+  { id: "Orianna", answers: ["orianna"], x: 58.2, y: 54.6, difficulty: "medium" },
+  { id: "Malzahar", answers: ["malzahar", "malz"], x: 56.5, y: 29.5, difficulty: "hard" },
+  { id: "Vex", answers: ["vex"], x: 5.7, y: 32.5, difficulty: "hard" },
+  { id: "Seraphine", answers: ["seraphine", "sera"], x: 72.3, y: 58.6, difficulty: "medium" },
+  { id: "Diana", answers: ["diana"], x: 47.5, y: 17.8, difficulty: "medium" },
+  { id: "Ekko", answers: ["ekko"], x: 13.2, y: 17.8, difficulty: "medium" },
+  { id: "Jhin", answers: ["jhin"], x: 89.2, y: 37.4, difficulty: "hard" },
+  { id: "Kindred", answers: ["kindred"], x: 22.3, y: 29, difficulty: "superhard" },
+].map((item) => ({
+  ...item,
+  splash: `/champions/${item.id
+    .toLowerCase()
+    .replace(/['.]/g, "")
+    .replace(/\s+/g, "-")}.jpg`,
+}));
+
+const RANKS: RankTier[] = [
+  { name: "Iron", min: 0, color: "#9ca3af", image: "/ranks/iron.png" },
+  { name: "Bronze", min: 120, color: "#b45309", image: "/ranks/bronze.png" },
+  { name: "Silver", min: 260, color: "#cbd5e1", image: "/ranks/silver.png" },
+  { name: "Gold", min: 420, color: "#facc15", image: "/ranks/gold.png" },
+  { name: "Platinum", min: 620, color: "#67e8f9", image: "/ranks/platinum.png" },
+  { name: "Emerald", min: 850, color: "#34d399", image: "/ranks/emerald.png" },
+  { name: "Diamond", min: 1120, color: "#60a5fa", image: "/ranks/diamond.png" },
+  { name: "Master", min: 1450, color: "#c084fc", image: "/ranks/master.png" },
+  { name: "Grandmaster", min: 1800, color: "#f87171", image: "/ranks/grandmaster.png" },
+  { name: "Challenger", min: 2200, color: "#f8fafc", image: "/ranks/challenger.png" },
 ];
 
 const STORAGE_KEY = "foundItems";
 const MAX_LIVES = 3;
 const MARKER_ANIMATION_MS = 2200;
+const REVEAL_POPUP_MS = 2300;
+const STREAK_WINDOW_MS = 7000;
+
+const SCORE_BY_DIFFICULTY: Record<Difficulty, number> = {
+  easy: 10,
+  medium: 20,
+  hard: 30,
+  superhard: 50,
+};
+
+function difficultyLabel(difficulty: Difficulty) {
+  if (difficulty === "easy") return "Easy";
+  if (difficulty === "medium") return "Medium";
+  if (difficulty === "hard") return "Hard";
+  return "SUPER HARD";
+}
+
+function getRankFromScore(score: number) {
+  return [...RANKS].reverse().find((rank) => score >= rank.min) ?? RANKS[0];
+}
 
 function normalize(text: string) {
   return text
@@ -118,11 +202,17 @@ function useLocalStorageState<T>(key: string, initialValue: T) {
 function useAudio() {
   const sounds = useMemo(() => {
     if (typeof window === "undefined") return null;
+
+    const ambience = new Audio("/theme-song.mp3");
+    ambience.loop = true;
+    ambience.volume = 0.32;
+
     return {
       correct: new Audio("/correct.wav"),
       wrong: new Audio("/wrong.wav"),
       already: new Audio("/already.wav"),
       gameover: new Audio("/gameover.wav"),
+      ambience,
     };
   }, []);
 
@@ -133,7 +223,25 @@ function useAudio() {
     sound.play().catch(() => {});
   };
 
-  return { play };
+  const startAmbience = () => {
+    const ambience = sounds?.ambience;
+    if (!ambience) return;
+    ambience.play().catch(() => {});
+  };
+
+  const stopAmbience = () => {
+    const ambience = sounds?.ambience;
+    if (!ambience) return;
+    ambience.pause();
+  };
+
+  const setAmbienceMuted = (muted: boolean) => {
+    const ambience = sounds?.ambience;
+    if (!ambience) return;
+    ambience.muted = muted;
+  };
+
+  return { play, startAmbience, stopAmbience, setAmbienceMuted };
 }
 
 export default function LeaguePage() {
@@ -141,22 +249,33 @@ export default function LeaguePage() {
     useLocalStorageState<string[]>(STORAGE_KEY, []);
 
   const [guess, setGuess] = useState("");
-  const [message, setMessage] = useState("Press Enter to guess.");
   const [lives, setLives] = useState(MAX_LIVES);
   const [gameOver, setGameOver] = useState(false);
+  const [gameWon, setGameWon] = useState(false);
   const [lastClick, setLastClick] = useState<{ x: number; y: number } | null>(null);
   const [freshlyFound, setFreshlyFound] = useState<string[]>([]);
   const [hoveredChampion, setHoveredChampion] = useState<string | null>(null);
   const [inputOpen, setInputOpen] = useState(false);
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [comboText, setComboText] = useState<string | null>(null);
+  const [revealChampion, setRevealChampion] = useState<Item | null>(null);
+  const [musicMuted, setMusicMuted] = useState(false);
+  const [ambienceStarted, setAmbienceStarted] = useState(false);
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const stageRef = useRef<HTMLElement | null>(null);
+  const loseButtonRef = useRef<HTMLButtonElement | null>(null);
+  const winButtonRef = useRef<HTMLButtonElement | null>(null);
+  const streakTimerRef = useRef<number | null>(null);
 
-  const { play } = useAudio();
+  const { play, startAmbience, stopAmbience, setAmbienceMuted } = useAudio();
 
   const foundSet = useMemo(() => new Set(found), [found]);
   const freshSet = useMemo(() => new Set(freshlyFound), [freshlyFound]);
   const foundCount = found.length;
+  const currentRank = getRankFromScore(score);
 
   function focusStage() {
     window.setTimeout(() => {
@@ -164,8 +283,15 @@ export default function LeaguePage() {
     }, 0);
   }
 
+  function ensureAmbienceStarted() {
+    if (ambienceStarted || musicMuted) return;
+    startAmbience();
+    setAmbienceStarted(true);
+  }
+
   function openInput() {
-    if (gameOver) return;
+    if (gameOver || gameWon) return;
+    ensureAmbienceStarted();
     setInputOpen(true);
   }
 
@@ -175,6 +301,24 @@ export default function LeaguePage() {
     focusStage();
   }
 
+  function getMultiplier(nextStreak: number) {
+    if (nextStreak >= 4) return 2;
+    if (nextStreak === 3) return 1.5;
+    if (nextStreak === 2) return 1.2;
+    return 1;
+  }
+
+  function resetStreakTimer() {
+    if (streakTimerRef.current) {
+      window.clearTimeout(streakTimerRef.current);
+    }
+
+    streakTimerRef.current = window.setTimeout(() => {
+      setStreak(0);
+      setComboText(null);
+    }, STREAK_WINDOW_MS);
+  }
+
   function findMatch(input: string) {
     const clean = normalize(input);
     if (!clean) return null;
@@ -182,42 +326,70 @@ export default function LeaguePage() {
   }
 
   function submitGuess() {
-    if (gameOver) return;
+    if (gameOver || gameWon) return;
 
     const trimmed = guess.trim();
     if (!trimmed) {
       closeInput();
-      setMessage("Press Enter to guess.");
       return;
     }
 
     const match = findMatch(trimmed);
 
     if (!match) {
-      setMessage("❌ Wrong!");
       play("wrong");
+      setStreak(0);
+      setComboText(null);
+
+      if (streakTimerRef.current) {
+        window.clearTimeout(streakTimerRef.current);
+      }
+
       setLives((current) => {
         const next = Math.max(current - 1, 0);
-        if (next === 0) setGameOver(true);
+        if (next === 0) {
+          setGameOver(true);
+        }
         return next;
       });
+
       closeInput();
       return;
     }
 
     if (foundSet.has(match.id)) {
-      setMessage("❗ Already found!");
       play("already");
       closeInput();
       return;
     }
 
+    ensureAmbienceStarted();
+
     const nextFound = [...found, match.id];
     setFound(nextFound);
     setFreshlyFound((current) => [...current, match.id]);
-    setMessage(`✅ Correct: ${match.id}`);
+
+    const nextStreak = streak + 1;
+    const multiplier = getMultiplier(nextStreak);
+    const basePoints = SCORE_BY_DIFFICULTY[match.difficulty];
+    const awarded = Math.round(basePoints * multiplier);
+
+    setScore((current) => current + awarded);
+    setStreak(nextStreak);
+    setBestStreak((current) => Math.max(current, nextStreak));
+    resetStreakTimer();
+
+    const difficultyName = difficultyLabel(match.difficulty);
+    const comboSuffix = multiplier > 1 ? ` x${multiplier.toFixed(1)}` : "";
+    setComboText(`+${awarded} • ${difficultyName}${comboSuffix}`);
+
+    setRevealChampion(match);
     play("correct");
     closeInput();
+
+    if (nextFound.length === ITEMS.length) {
+      setGameWon(true);
+    }
   }
 
   function resetGame() {
@@ -225,11 +397,21 @@ export default function LeaguePage() {
     setFreshlyFound([]);
     setHoveredChampion(null);
     setGuess("");
-    setMessage("Press Enter to guess.");
     setLives(MAX_LIVES);
     setGameOver(false);
+    setGameWon(false);
     setLastClick(null);
     setInputOpen(false);
+    setScore(0);
+    setStreak(0);
+    setBestStreak(0);
+    setComboText(null);
+    setRevealChampion(null);
+
+    if (streakTimerRef.current) {
+      window.clearTimeout(streakTimerRef.current);
+    }
+
     focusStage();
   }
 
@@ -260,17 +442,42 @@ export default function LeaguePage() {
   }, [freshlyFound]);
 
   useEffect(() => {
-    if (!gameOver) return;
-
-    setMessage("💀 Game Over!");
-    play("gameover");
-
+    if (!revealChampion) return;
     const timer = window.setTimeout(() => {
-      resetGame();
-    }, 1200);
-
+      setRevealChampion(null);
+    }, REVEAL_POPUP_MS);
     return () => window.clearTimeout(timer);
-  }, [gameOver]);
+  }, [revealChampion]);
+
+  useEffect(() => {
+    setAmbienceMuted(musicMuted);
+    if (musicMuted) {
+      stopAmbience();
+      return;
+    }
+    if (ambienceStarted) {
+      startAmbience();
+    }
+  }, [musicMuted, ambienceStarted, setAmbienceMuted, startAmbience, stopAmbience]);
+
+  useEffect(() => {
+    if (!gameOver) return;
+    play("gameover");
+    setInputOpen(false);
+
+    window.setTimeout(() => {
+      loseButtonRef.current?.focus();
+    }, 40);
+  }, [gameOver, play]);
+
+  useEffect(() => {
+    if (!gameWon) return;
+    setInputOpen(false);
+
+    window.setTimeout(() => {
+      winButtonRef.current?.focus();
+    }, 40);
+  }, [gameWon]);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -282,7 +489,7 @@ export default function LeaguePage() {
 
       if (typingInField) return;
 
-      if ((e.key === "Enter" || e.key === "/") && !inputOpen && !gameOver) {
+      if ((e.key === "Enter" || e.key === "/") && !inputOpen && !gameOver && !gameWon) {
         e.preventDefault();
         openInput();
       }
@@ -290,15 +497,16 @@ export default function LeaguePage() {
       if (e.key === "Escape" && inputOpen) {
         e.preventDefault();
         closeInput();
-        setMessage("Press Enter to guess.");
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [inputOpen, gameOver]);
+  }, [inputOpen, gameOver, gameWon, ambienceStarted, musicMuted]);
 
   function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
+    ensureAmbienceStarted();
+
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -386,6 +594,31 @@ export default function LeaguePage() {
           }
         }
 
+        @keyframes revealIn {
+          0% {
+            opacity: 0;
+            transform: translateY(24px) scale(0.96);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes comboFloat {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, 10px) scale(0.96);
+          }
+          20% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -36px) scale(1.05);
+          }
+        }
+
         .league-dock {
           opacity: 0;
           pointer-events: none;
@@ -436,6 +669,22 @@ export default function LeaguePage() {
             right: 14px !important;
             font-size: 11px !important;
           }
+
+          .league-reveal {
+            left: 12px !important;
+            right: 12px !important;
+            top: auto !important;
+            bottom: 78px !important;
+            width: auto !important;
+          }
+
+          .league-modal-card {
+            width: calc(100vw - 24px) !important;
+          }
+
+          .league-rank-layout {
+            grid-template-columns: 1fr !important;
+          }
         }
       `}</style>
 
@@ -473,7 +722,7 @@ export default function LeaguePage() {
               display: "flex",
               flexWrap: "wrap",
               gap: 10,
-              maxWidth: 520,
+              maxWidth: 560,
             }}
           >
             <div
@@ -563,8 +812,7 @@ export default function LeaguePage() {
                 backdropFilter: "blur(14px)",
                 WebkitBackdropFilter: "blur(14px)",
                 border: "1px solid rgba(255,255,255,0.12)",
-                minWidth: 180,
-                maxWidth: 260,
+                minWidth: 118,
               }}
             >
               <div
@@ -575,22 +823,80 @@ export default function LeaguePage() {
                   color: "rgba(148,163,184,0.88)",
                 }}
               >
-                Status
+                Score
               </div>
               <div
                 style={{
                   marginTop: 4,
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: "rgba(248,250,252,0.94)",
+                  fontSize: 24,
+                  fontWeight: 800,
+                  lineHeight: 1,
                 }}
               >
-                {message}
+                {score}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 18,
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                minWidth: 118,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(148,163,184,0.88)",
+                }}
+              >
+                Streak
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 24,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                x{getMultiplier(streak).toFixed(1)}
               </div>
             </div>
           </div>
 
           <div style={{ pointerEvents: "auto", display: "flex", gap: 10 }}>
+            <button
+              onClick={() => {
+                const nextMuted = !musicMuted;
+                setMusicMuted(nextMuted);
+                if (!nextMuted) {
+                  ensureAmbienceStarted();
+                }
+              }}
+              style={{
+                ...baseButtonStyle,
+                width: 46,
+                height: 46,
+                borderRadius: "999px",
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                boxShadow: "0 14px 32px rgba(0,0,0,0.24)",
+                fontSize: 17,
+              }}
+              aria-label={musicMuted ? "Unmute music" : "Mute music"}
+              title={musicMuted ? "Unmute music" : "Mute music"}
+            >
+              {musicMuted ? "🔇" : "🎵"}
+            </button>
+
             <button
               onClick={resetGame}
               style={{
@@ -698,6 +1004,100 @@ export default function LeaguePage() {
           </div>
         </div>
 
+        {comboText && !gameOver && !gameWon && (
+          <div
+            style={{
+              position: "fixed",
+              left: "50%",
+              bottom: 132,
+              transform: "translateX(-50%)",
+              zIndex: 38,
+              padding: "12px 16px",
+              borderRadius: 16,
+              background: "rgba(14,165,233,0.16)",
+              border: "1px solid rgba(56,189,248,0.34)",
+              color: "#e0f2fe",
+              fontWeight: 800,
+              letterSpacing: "0.02em",
+              boxShadow: "0 18px 48px rgba(2,132,199,0.18)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              animation: "comboFloat 1600ms ease-out forwards",
+              pointerEvents: "none",
+            }}
+          >
+            {comboText}
+          </div>
+        )}
+
+        {revealChampion && !gameOver && !gameWon && (
+          <div
+            className="league-reveal"
+            style={{
+              position: "fixed",
+              right: 20,
+              top: 104,
+              width: 300,
+              zIndex: 40,
+              borderRadius: 24,
+              overflow: "hidden",
+              background: "rgba(15,23,42,0.76)",
+              border: "1px solid rgba(255,255,255,0.14)",
+              boxShadow: "0 28px 80px rgba(0,0,0,0.45)",
+              backdropFilter: "blur(18px)",
+              WebkitBackdropFilter: "blur(18px)",
+              animation: "revealIn 220ms ease-out forwards",
+            }}
+          >
+            <div
+              style={{
+                height: 170,
+                backgroundImage: `url('${revealChampion.splash}')`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundColor: "#0f172a",
+              }}
+            />
+            <div style={{ padding: 16 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(148,163,184,0.88)",
+                }}
+              >
+                Champion found
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  fontSize: 24,
+                  fontWeight: 800,
+                  lineHeight: 1.1,
+                }}
+              >
+                {revealChampion.id}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "inline-flex",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(56,189,248,0.14)",
+                  color: "#bae6fd",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  border: "1px solid rgba(56,189,248,0.22)",
+                }}
+              >
+                {difficultyLabel(revealChampion.difficulty)}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div
           className={`league-dock ${inputOpen ? "is-open" : ""}`}
           style={{
@@ -770,10 +1170,9 @@ export default function LeaguePage() {
                 if (e.key === "Escape") {
                   e.preventDefault();
                   closeInput();
-                  setMessage("Press Enter to guess.");
                 }
               }}
-              disabled={gameOver}
+              disabled={gameOver || gameWon}
               autoComplete="off"
               spellCheck={false}
               style={{
@@ -783,7 +1182,7 @@ export default function LeaguePage() {
                 fontSize: 16,
                 borderRadius: 16,
                 border: `1px solid ${
-                  gameOver ? "rgba(148,163,184,0.4)" : "rgba(255,255,255,0.16)"
+                  gameOver || gameWon ? "rgba(148,163,184,0.4)" : "rgba(255,255,255,0.16)"
                 }`,
                 outline: "none",
                 background: "rgba(255,255,255,0.08)",
@@ -795,19 +1194,21 @@ export default function LeaguePage() {
             <button
               className="league-submit"
               onClick={submitGuess}
-              disabled={gameOver}
+              disabled={gameOver || gameWon}
               style={{
                 ...baseButtonStyle,
                 padding: "16px 22px",
                 borderRadius: 16,
-                background: gameOver
-                  ? "rgba(71,85,105,0.72)"
-                  : "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
-                border: gameOver
-                  ? "1px solid rgba(148,163,184,0.22)"
-                  : "1px solid rgba(99,102,241,0.35)",
-                boxShadow: gameOver ? "none" : "0 14px 30px rgba(79,70,229,0.34)",
-                cursor: gameOver ? "not-allowed" : "pointer",
+                background:
+                  gameOver || gameWon
+                    ? "rgba(71,85,105,0.72)"
+                    : "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                border:
+                  gameOver || gameWon
+                    ? "1px solid rgba(148,163,184,0.22)"
+                    : "1px solid rgba(99,102,241,0.35)",
+                boxShadow: gameOver || gameWon ? "none" : "0 14px 30px rgba(79,70,229,0.34)",
+                cursor: gameOver || gameWon ? "not-allowed" : "pointer",
                 minWidth: 110,
               }}
             >
@@ -816,7 +1217,7 @@ export default function LeaguePage() {
           </div>
         </div>
 
-        {!inputOpen && (
+        {!inputOpen && !gameOver && !gameWon && (
           <div
             className="league-hint"
             style={{
@@ -837,6 +1238,447 @@ export default function LeaguePage() {
             }}
           >
             Press Enter to guess
+          </div>
+        )}
+
+        {gameOver && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-over-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 50,
+              display: "grid",
+              placeItems: "center",
+              background: "rgba(2,6,23,0.74)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: 16,
+            }}
+          >
+            <div
+              className="league-modal-card"
+              style={{
+                width: 720,
+                maxWidth: "100%",
+                borderRadius: 28,
+                overflow: "hidden",
+                background: "linear-gradient(180deg, rgba(15,23,42,0.97), rgba(2,6,23,0.97))",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 32px 100px rgba(0,0,0,0.52)",
+              }}
+            >
+              <div
+                style={{
+                  padding: "26px 24px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(148,163,184,0.84)",
+                  }}
+                >
+                  Defeat
+                </div>
+                <h2
+                  id="game-over-title"
+                  style={{
+                    marginTop: 10,
+                    fontSize: 34,
+                    lineHeight: 1,
+                    fontWeight: 900,
+                  }}
+                >
+                  Game Over
+                </h2>
+                <p
+                  style={{
+                    marginTop: 10,
+                    color: "rgba(226,232,240,0.82)",
+                    fontSize: 15,
+                  }}
+                >
+                  You ran out of lives. Your final rank has been assigned.
+                </p>
+              </div>
+
+              <div
+                className="league-rank-layout"
+                style={{
+                  padding: 24,
+                  display: "grid",
+                  gridTemplateColumns: "260px 1fr",
+                  gap: 18,
+                  alignItems: "stretch",
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: 22,
+                    padding: 18,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    display: "grid",
+                    placeItems: "center",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={currentRank.image}
+                    alt={currentRank.name}
+                    width={150}
+                    height={150}
+                    style={{
+                      width: 150,
+                      height: 150,
+                      objectFit: "contain",
+                      marginBottom: 12,
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontSize: 12,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "rgba(148,163,184,0.84)",
+                    }}
+                  >
+                    Final rank
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 30,
+                      fontWeight: 900,
+                      color: currentRank.color,
+                    }}
+                  >
+                    {currentRank.name}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Score
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>{score}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Found
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>
+                      {foundCount}/{ITEMS.length}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Best streak
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>{bestStreak}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "0 24px 24px",
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  ref={loseButtonRef}
+                  onClick={resetGame}
+                  style={{
+                    ...baseButtonStyle,
+                    flex: "1 1 220px",
+                    padding: "16px 20px",
+                    borderRadius: 18,
+                    background: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                    border: "1px solid rgba(99,102,241,0.35)",
+                    boxShadow: "0 14px 30px rgba(79,70,229,0.34)",
+                    fontSize: 16,
+                  }}
+                >
+                  Retry
+                </button>
+
+                <Link
+                  href="/"
+                  style={{
+                    ...baseButtonStyle,
+                    flex: "1 1 220px",
+                    padding: "16px 20px",
+                    borderRadius: 18,
+                    background: "rgba(255,255,255,0.06)",
+                    textDecoration: "none",
+                    textAlign: "center",
+                    fontSize: 16,
+                  }}
+                >
+                  Back home
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameWon && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="victory-title"
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 50,
+              display: "grid",
+              placeItems: "center",
+              background: "rgba(2,6,23,0.74)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: 16,
+            }}
+          >
+            <div
+              className="league-modal-card"
+              style={{
+                width: 720,
+                maxWidth: "100%",
+                borderRadius: 28,
+                overflow: "hidden",
+                background:
+                  "linear-gradient(180deg, rgba(15,23,42,0.97), rgba(2,6,23,0.97))",
+                border: "1px solid rgba(255,255,255,0.12)",
+                boxShadow: "0 32px 100px rgba(0,0,0,0.52)",
+              }}
+            >
+              <div
+                style={{
+                  padding: "26px 24px 18px",
+                  borderBottom: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    color: "rgba(148,163,184,0.84)",
+                  }}
+                >
+                  Victory
+                </div>
+                <h2
+                  id="victory-title"
+                  style={{
+                    marginTop: 10,
+                    fontSize: 34,
+                    lineHeight: 1,
+                    fontWeight: 900,
+                  }}
+                >
+                  66 / 66 Found
+                </h2>
+                <p
+                  style={{
+                    marginTop: 10,
+                    color: "rgba(226,232,240,0.82)",
+                    fontSize: 15,
+                  }}
+                >
+                  You cleared the full League basement and earned your final rank.
+                </p>
+              </div>
+
+              <div
+                className="league-rank-layout"
+                style={{
+                  padding: 24,
+                  display: "grid",
+                  gridTemplateColumns: "260px 1fr",
+                  gap: 18,
+                  alignItems: "stretch",
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: 22,
+                    padding: 18,
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    display: "grid",
+                    placeItems: "center",
+                    textAlign: "center",
+                  }}
+                >
+                  <img
+                    src={currentRank.image}
+                    alt={currentRank.name}
+                    width={150}
+                    height={150}
+                    style={{
+                      width: 150,
+                      height: 150,
+                      objectFit: "contain",
+                      marginBottom: 12,
+                    }}
+                  />
+                  <div
+                    style={{
+                      fontSize: 12,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      color: "rgba(148,163,184,0.84)",
+                    }}
+                  >
+                    Final rank
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      fontSize: 30,
+                      fontWeight: 900,
+                      color: currentRank.color,
+                    }}
+                  >
+                    {currentRank.name}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Score
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>{score}</div>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Found
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>
+                      {foundCount}/{ITEMS.length}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      borderRadius: 18,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.05)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div style={{ fontSize: 12, color: "rgba(148,163,184,0.84)", textTransform: "uppercase" }}>
+                      Best streak
+                    </div>
+                    <div style={{ marginTop: 6, fontSize: 28, fontWeight: 900 }}>{bestStreak}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "0 24px 24px",
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  ref={winButtonRef}
+                  onClick={resetGame}
+                  style={{
+                    ...baseButtonStyle,
+                    flex: "1 1 220px",
+                    padding: "16px 20px",
+                    borderRadius: 18,
+                    background: "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                    border: "1px solid rgba(99,102,241,0.35)",
+                    boxShadow: "0 14px 30px rgba(79,70,229,0.34)",
+                    fontSize: 16,
+                  }}
+                >
+                  Play again
+                </button>
+
+                <Link
+                  href="/"
+                  style={{
+                    ...baseButtonStyle,
+                    flex: "1 1 220px",
+                    padding: "16px 20px",
+                    borderRadius: 18,
+                    background: "rgba(255,255,255,0.06)",
+                    textDecoration: "none",
+                    textAlign: "center",
+                    fontSize: 16,
+                  }}
+                >
+                  Back home
+                </Link>
+              </div>
+            </div>
           </div>
         )}
       </main>
