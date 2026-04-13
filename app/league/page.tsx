@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Item = {
   id: string;
@@ -92,7 +93,7 @@ function normalize(text: string) {
 }
 
 function useLocalStorageState<T>(key: string, initialValue: T) {
-  const [value, setValue] = useState<T>(initialValue);
+  const [value, setValue] = useState(initialValue);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -125,7 +126,7 @@ function useAudio() {
     };
   }, []);
 
-  const play = (name: keyof NonNullable<typeof sounds>) => {
+  const play = (name: "correct" | "wrong" | "already" | "gameover") => {
     const sound = sounds?.[name];
     if (!sound) return;
     sound.currentTime = 0;
@@ -135,23 +136,44 @@ function useAudio() {
   return { play };
 }
 
-export default function Home() {
-  const { value: found, setValue: setFound, reset: resetFound, ready } = useLocalStorageState<string[]>(
-    STORAGE_KEY,
-    []
-  );
+export default function LeaguePage() {
+  const { value: found, setValue: setFound, reset: resetFound, ready } =
+    useLocalStorageState<string[]>(STORAGE_KEY, []);
+
   const [guess, setGuess] = useState("");
-  const [message, setMessage] = useState("Find all the champions.");
+  const [message, setMessage] = useState("Press Enter to guess.");
   const [lives, setLives] = useState(MAX_LIVES);
   const [gameOver, setGameOver] = useState(false);
   const [lastClick, setLastClick] = useState<{ x: number; y: number } | null>(null);
   const [freshlyFound, setFreshlyFound] = useState<string[]>([]);
   const [hoveredChampion, setHoveredChampion] = useState<string | null>(null);
+  const [inputOpen, setInputOpen] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const stageRef = useRef<HTMLElement | null>(null);
+
   const { play } = useAudio();
 
   const foundSet = useMemo(() => new Set(found), [found]);
   const freshSet = useMemo(() => new Set(freshlyFound), [freshlyFound]);
   const foundCount = found.length;
+
+  function focusStage() {
+    window.setTimeout(() => {
+      stageRef.current?.focus();
+    }, 0);
+  }
+
+  function openInput() {
+    if (gameOver) return;
+    setInputOpen(true);
+  }
+
+  function closeInput() {
+    setInputOpen(false);
+    setGuess("");
+    focusStage();
+  }
 
   function findMatch(input: string) {
     const clean = normalize(input);
@@ -162,23 +184,31 @@ export default function Home() {
   function submitGuess() {
     if (gameOver) return;
 
-    const match = findMatch(guess);
+    const trimmed = guess.trim();
+    if (!trimmed) {
+      closeInput();
+      setMessage("Press Enter to guess.");
+      return;
+    }
+
+    const match = findMatch(trimmed);
+
     if (!match) {
       setMessage("❌ Wrong!");
       play("wrong");
-      setGuess("");
       setLives((current) => {
         const next = Math.max(current - 1, 0);
         if (next === 0) setGameOver(true);
         return next;
       });
+      closeInput();
       return;
     }
 
     if (foundSet.has(match.id)) {
       setMessage("❗ Already found!");
       play("already");
-      setGuess("");
+      closeInput();
       return;
     }
 
@@ -187,8 +217,35 @@ export default function Home() {
     setFreshlyFound((current) => [...current, match.id]);
     setMessage(`✅ Correct: ${match.id}`);
     play("correct");
-    setGuess("");
+    closeInput();
   }
+
+  function resetGame() {
+    resetFound();
+    setFreshlyFound([]);
+    setHoveredChampion(null);
+    setGuess("");
+    setMessage("Press Enter to guess.");
+    setLives(MAX_LIVES);
+    setGameOver(false);
+    setLastClick(null);
+    setInputOpen(false);
+    focusStage();
+  }
+
+  useEffect(() => {
+    if (!ready) return;
+    focusStage();
+  }, [ready]);
+
+  useEffect(() => {
+    if (!inputOpen) return;
+    const timer = window.setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }, 40);
+    return () => window.clearTimeout(timer);
+  }, [inputOpen]);
 
   useEffect(() => {
     if (!freshlyFound.length) return;
@@ -204,321 +261,585 @@ export default function Home() {
 
   useEffect(() => {
     if (!gameOver) return;
+
     setMessage("💀 Game Over!");
     play("gameover");
 
     const timer = window.setTimeout(() => {
-      resetFound();
-      setFreshlyFound([]);
-      setHoveredChampion(null);
-      setLives(MAX_LIVES);
-      setGameOver(false);
-      setMessage("Find all the champions.");
-      setGuess("");
-      setLastClick(null);
+      resetGame();
     }, 1200);
 
     return () => window.clearTimeout(timer);
-  }, [gameOver, play, resetFound]);
+  }, [gameOver]);
 
-  function handleImageClick(e: React.MouseEvent<HTMLImageElement>) {
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const typingInField =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.getAttribute("contenteditable") === "true";
+
+      if (typingInField) return;
+
+      if ((e.key === "Enter" || e.key === "/") && !inputOpen && !gameOver) {
+        e.preventDefault();
+        openInput();
+      }
+
+      if (e.key === "Escape" && inputOpen) {
+        e.preventDefault();
+        closeInput();
+        setMessage("Press Enter to guess.");
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [inputOpen, gameOver]);
+
+  function handleImageClick(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
     setLastClick({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10 });
-  }
-
-  function resetGame() {
-    resetFound();
-    setFreshlyFound([]);
-    setHoveredChampion(null);
-    setGuess("");
-    setMessage("Find all the champions.");
-    setLives(MAX_LIVES);
-    setGameOver(false);
-    setLastClick(null);
+    focusStage();
   }
 
   if (!ready) {
     return (
-      <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24 }}>
-        <p>Loading game...</p>
-      </main>
-    );
-  }
-
-  return (
-    <>
-      <main
+      <div
         style={{
           minHeight: "100vh",
-          width: "100vw",
-          padding: 20,
-          boxSizing: "border-box",
-          display: "flex",
-          flexDirection: "column",
-          gap: 20,
-          background: "linear-gradient(180deg, #0f172a 0%, #111827 100%)",
+          display: "grid",
+          placeItems: "center",
+          background: "#020617",
           color: "#f8fafc",
         }}
       >
-        <header
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 16,
-          }}
-        >
-          <div>
-            <h1 style={{ margin: 0, fontSize: "clamp(28px, 4vw, 42px)", letterSpacing: "0.02em" }}>
-              Basement Icecream
-            </h1>
-            <p style={{ margin: "8px 0 0", opacity: 0.85, fontSize: 16 }}>{message}</p>
-          </div>
+        Loading game...
+      </div>
+    );
+  }
 
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <div
-              style={{
-                padding: "10px 16px",
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.14)",
-                boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
-                fontSize: 15,
-                fontWeight: 700,
-                backdropFilter: "blur(10px)",
-              }}
-            >
-              Score: <span style={{ color: "#ffffff" }}>{foundCount}</span> / {ITEMS.length}
-            </div>
+  const baseButtonStyle = {
+    border: "1px solid rgba(255,255,255,0.12)",
+    color: "#f8fafc",
+    cursor: "pointer",
+    fontWeight: 700,
+  } as const;
 
-            <button onClick={resetGame} style={secondaryButtonStyle}>
-              Reset
-            </button>
-          </div>
-        </header>
+  const markerDotStyle = {
+    width: 12,
+    height: 12,
+    borderRadius: "50%",
+    background: "rgba(255,255,255,0.98)",
+    boxShadow: "0 0 0 2px rgba(255,255,255,0.16), 0 0 18px rgba(255,255,255,0.28)",
+  } as const;
 
-        <section aria-label="Lives" style={{ margin: "4px 0 0", display: "flex", gap: 10 }}>
-          {Array.from({ length: MAX_LIVES }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: "50%",
-                background: i < lives ? "#fb7185" : "rgba(148,163,184,0.35)",
-                boxShadow: i < lives ? "0 0 0 4px rgba(251,113,133,0.14)" : "none",
-                transition: "all 0.25s ease",
-              }}
-            />
-          ))}
-        </section>
+  const pulseRingStyle = {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 18,
+    height: 18,
+    borderRadius: "50%",
+    border: "2px solid rgba(255,255,255,0.95)",
+    boxShadow: "0 0 18px rgba(255,255,255,0.22)",
+    animation: `markerPulse ${MARKER_ANIMATION_MS}ms ease-out forwards`,
+    pointerEvents: "none",
+    transform: "translate(-50%, -50%)",
+  } as const;
 
-        <section
-          style={{
-            display: "flex",
-            gap: 12,
-            flexWrap: "wrap",
-            alignItems: "center",
-            padding: 14,
-            borderRadius: 18,
-            background: "rgba(255,255,255,0.06)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <label htmlFor="guess" style={{ position: "absolute", left: -9999 }}>
-            Your guess
-          </label>
-          <input
-            id="guess"
-            value={guess}
-            onChange={(e) => setGuess(e.target.value)}
-            placeholder="Guess a champion..."
-            onKeyDown={(e) => {
-              if (e.key === "Enter") submitGuess();
-            }}
-            disabled={gameOver}
-            autoComplete="off"
-            style={{
-              flex: "1 1 260px",
-              minWidth: 220,
-              padding: "14px 16px",
-              fontSize: 16,
-              borderRadius: 14,
-              border: `1px solid ${gameOver ? "rgba(148,163,184,0.4)" : "rgba(255,255,255,0.18)"}`,
-              outline: "none",
-              background: "rgba(15,23,42,0.72)",
-              color: "#f8fafc",
-              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-            }}
-          />
-          <button onClick={submitGuess} disabled={gameOver} style={primaryButtonStyle(gameOver)}>
-            Guess
-          </button>
-        </section>
+  const tooltipStyle = {
+    position: "absolute",
+    left: "50%",
+    bottom: "calc(100% + 12px)",
+    transform: "translateX(-50%)",
+    whiteSpace: "nowrap",
+    padding: "8px 10px",
+    borderRadius: 10,
+    background: "rgba(15,23,42,0.94)",
+    color: "#f8fafc",
+    fontSize: 13,
+    fontWeight: 700,
+    border: "1px solid rgba(255,255,255,0.12)",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.28)",
+    pointerEvents: "none",
+  } as const;
 
-        {lastClick && (
-          <p style={{ fontSize: 14, opacity: 0.72, margin: 0 }}>
-            Last click: {lastClick.x}% / {lastClick.y}%
-          </p>
-        )}
-
-        <section
-          style={{
-            position: "relative",
-            width: "100%",
-            flex: 1,
-            minHeight: 0,
-            overflow: "hidden",
-            borderRadius: 18,
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 24px 60px rgba(0,0,0,0.35)",
-          }}
-        >
-          <img
-            src="/scene.png"
-            alt="Game scene"
-            onClick={handleImageClick}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-              display: "block",
-              cursor: "crosshair",
-              userSelect: "none",
-            }}
-          />
-
-          {ITEMS.filter((item) => foundSet.has(item.id)).map((item) => {
-            const isFresh = freshSet.has(item.id);
-
-            return (
-              <div
-                key={item.id}
-                style={{
-                  position: "absolute",
-                  left: `${item.x}%`,
-                  top: `${item.y}%`,
-                  transform: "translate(-50%, -50%)",
-                  pointerEvents: "auto",
-                }}
-                onMouseEnter={() => setHoveredChampion(item.id)}
-                onMouseLeave={() => setHoveredChampion((current) => (current === item.id ? null : current))}
-              >
-                {isFresh && <div style={pulseRingStyle} />}
-
-                <div style={markerDotStyle} />
-
-                {hoveredChampion === item.id && <div style={tooltipStyle}>{item.id}</div>}
-              </div>
-            );
-          })}
-        </section>
-      </main>
-
+  return (
+    <>
       <style>{`
         @keyframes markerPulse {
           0% {
-            transform: translate(-50%, -50%) scale(0.45);
-            opacity: 0;
-          }
-          20% {
-            opacity: 0.95;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(0.6);
           }
           70% {
-            opacity: 0.3;
+            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(2.6);
           }
           100% {
-            transform: translate(-50%, -50%) scale(2.6);
             opacity: 0;
+            transform: translate(-50%, -50%) scale(3.4);
           }
         }
 
-        button {
-          transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+        .league-dock {
+          opacity: 0;
+          pointer-events: none;
+          transform: translateX(-50%) translateY(18px) scale(0.98);
+          transition: opacity 180ms ease, transform 180ms ease;
         }
 
-        button:hover:not(:disabled) {
-          transform: translateY(-1px);
+        .league-dock.is-open {
+          opacity: 1;
+          pointer-events: auto;
+          transform: translateX(-50%) translateY(0) scale(1);
         }
 
-        button:active:not(:disabled) {
-          transform: translateY(0);
-        }
+        @media (max-width: 900px) {
+          .league-topbar {
+            top: 12px !important;
+            left: 12px !important;
+            right: 12px !important;
+          }
 
-        input::placeholder {
-          color: rgba(226, 232, 240, 0.6);
+          .league-dock {
+            left: 12px !important;
+            right: 12px !important;
+            bottom: 12px !important;
+            width: auto !important;
+          }
+
+          .league-dock.is-open {
+            transform: translateY(0) scale(1) !important;
+          }
+
+          .league-dock-row {
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+
+          .league-input {
+            min-width: 0 !important;
+            width: 100% !important;
+          }
+
+          .league-submit {
+            width: 100% !important;
+          }
+
+          .league-hint {
+            bottom: 14px !important;
+            right: 14px !important;
+            font-size: 11px !important;
+          }
         }
       `}</style>
+
+      <main
+        ref={stageRef}
+        tabIndex={-1}
+        style={{
+          height: "100dvh",
+          overflow: "hidden",
+          background:
+            "radial-gradient(circle at top, rgba(59,130,246,0.12) 0%, rgba(15,23,42,1) 32%, rgba(2,6,23,1) 100%)",
+          color: "#f8fafc",
+          position: "relative",
+          outline: "none",
+        }}
+      >
+        <div
+          className="league-topbar"
+          style={{
+            position: "fixed",
+            top: 20,
+            left: 20,
+            right: 20,
+            zIndex: 30,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: 16,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              maxWidth: 520,
+            }}
+          >
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 18,
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                minWidth: 118,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(148,163,184,0.88)",
+                }}
+              >
+                Found
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 24,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                {foundCount} / {ITEMS.length}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 18,
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                minWidth: 118,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(148,163,184,0.88)",
+                }}
+              >
+                Lives
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  display: "flex",
+                  gap: 7,
+                }}
+              >
+                {Array.from({ length: MAX_LIVES }).map((_, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      width: 12,
+                      height: 12,
+                      borderRadius: "999px",
+                      background:
+                        i < lives
+                          ? "linear-gradient(135deg, #fb7185 0%, #ef4444 100%)"
+                          : "rgba(148,163,184,0.28)",
+                      boxShadow: i < lives ? "0 0 14px rgba(239,68,68,0.4)" : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                padding: "12px 14px",
+                borderRadius: 18,
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                minWidth: 180,
+                maxWidth: 260,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "rgba(148,163,184,0.88)",
+                }}
+              >
+                Status
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: "rgba(248,250,252,0.94)",
+                }}
+              >
+                {message}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ pointerEvents: "auto", display: "flex", gap: 10 }}>
+            <button
+              onClick={resetGame}
+              style={{
+                ...baseButtonStyle,
+                width: 46,
+                height: 46,
+                borderRadius: "999px",
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                boxShadow: "0 14px 32px rgba(0,0,0,0.24)",
+                fontSize: 18,
+              }}
+              aria-label="Reset game"
+              title="Reset game"
+            >
+              ↺
+            </button>
+
+            <Link
+              href="/"
+              style={{
+                ...baseButtonStyle,
+                width: 46,
+                height: 46,
+                borderRadius: "999px",
+                background: "rgba(15,23,42,0.54)",
+                backdropFilter: "blur(14px)",
+                WebkitBackdropFilter: "blur(14px)",
+                boxShadow: "0 14px 32px rgba(0,0,0,0.24)",
+                display: "grid",
+                placeItems: "center",
+                textDecoration: "none",
+                fontSize: 18,
+              }}
+              aria-label="Go home"
+              title="Go home"
+            >
+              ⌂
+            </Link>
+          </div>
+        </div>
+
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            overflow: "hidden",
+          }}
+        >
+          <div
+            onClick={handleImageClick}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: "100vw",
+              height: "56.25vw",
+              maxWidth: "177.78vh",
+              maxHeight: "100vh",
+              transform: "translate(-50%, -50%)",
+              overflow: "hidden",
+              backgroundColor: "#020617",
+              backgroundImage: "url('/league-home.png')",
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "center",
+              backgroundSize: "100% 100%",
+              cursor: "crosshair",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(circle at top, rgba(99,102,241,0.08) 0%, rgba(2,6,23,0.02) 34%, rgba(2,6,23,0.06) 100%)",
+                pointerEvents: "none",
+              }}
+            />
+
+            {ITEMS.filter((item) => foundSet.has(item.id)).map((item) => {
+              const isFresh = freshSet.has(item.id);
+
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    position: "absolute",
+                    left: `${item.x}%`,
+                    top: `${item.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 4,
+                  }}
+                  onMouseEnter={() => setHoveredChampion(item.id)}
+                  onMouseLeave={() =>
+                    setHoveredChampion((current) => (current === item.id ? null : current))
+                  }
+                >
+                  <div style={markerDotStyle} />
+                  {isFresh && <div style={pulseRingStyle} />}
+                  {hoveredChampion === item.id && <div style={tooltipStyle}>{item.id}</div>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          className={`league-dock ${inputOpen ? "is-open" : ""}`}
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: 16,
+            transform: "translateX(-50%)",
+            width: "min(680px, calc(100vw - 32px))",
+            zIndex: 35,
+            padding: 12,
+            borderRadius: 24,
+            background: "rgba(15,23,42,0.42)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            border: "1px solid rgba(255,255,255,0.14)",
+            boxShadow: "0 24px 60px rgba(0,0,0,0.34)",
+          }}
+        >
+          <div
+            style={{
+              marginBottom: 10,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                fontSize: 13,
+                color: "rgba(226,232,240,0.86)",
+                fontWeight: 600,
+              }}
+            >
+              Type a champion name, then press Enter.
+            </span>
+
+            {lastClick && (
+              <span
+                style={{
+                  fontSize: 12,
+                  color: "rgba(148,163,184,0.86)",
+                }}
+              >
+                Last click: {lastClick.x}% / {lastClick.y}%
+              </span>
+            )}
+          </div>
+
+          <div
+            className="league-dock-row"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <input
+              ref={inputRef}
+              className="league-input"
+              value={guess}
+              onChange={(e) => setGuess(e.target.value)}
+              placeholder="Guess a champion..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitGuess();
+                }
+                if (e.key === "Escape") {
+                  e.preventDefault();
+                  closeInput();
+                  setMessage("Press Enter to guess.");
+                }
+              }}
+              disabled={gameOver}
+              autoComplete="off"
+              spellCheck={false}
+              style={{
+                flex: "1 1 320px",
+                minWidth: 260,
+                padding: "16px 18px",
+                fontSize: 16,
+                borderRadius: 16,
+                border: `1px solid ${
+                  gameOver ? "rgba(148,163,184,0.4)" : "rgba(255,255,255,0.16)"
+                }`,
+                outline: "none",
+                background: "rgba(255,255,255,0.08)",
+                color: "#f8fafc",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+              }}
+            />
+
+            <button
+              className="league-submit"
+              onClick={submitGuess}
+              disabled={gameOver}
+              style={{
+                ...baseButtonStyle,
+                padding: "16px 22px",
+                borderRadius: 16,
+                background: gameOver
+                  ? "rgba(71,85,105,0.72)"
+                  : "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
+                border: gameOver
+                  ? "1px solid rgba(148,163,184,0.22)"
+                  : "1px solid rgba(99,102,241,0.35)",
+                boxShadow: gameOver ? "none" : "0 14px 30px rgba(79,70,229,0.34)",
+                cursor: gameOver ? "not-allowed" : "pointer",
+                minWidth: 110,
+              }}
+            >
+              Guess
+            </button>
+          </div>
+        </div>
+
+        {!inputOpen && (
+          <div
+            className="league-hint"
+            style={{
+              position: "fixed",
+              right: 18,
+              bottom: 18,
+              zIndex: 20,
+              padding: "8px 10px",
+              borderRadius: 12,
+              background: "rgba(15,23,42,0.38)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(226,232,240,0.84)",
+              fontSize: 12,
+              fontWeight: 600,
+              pointerEvents: "none",
+            }}
+          >
+            Press Enter to guess
+          </div>
+        )}
+      </main>
     </>
   );
 }
-
-const baseButtonStyle = {
-  padding: "12px 18px",
-  borderRadius: 14,
-  border: "1px solid rgba(255,255,255,0.12)",
-  fontSize: 15,
-  fontWeight: 700,
-  cursor: "pointer",
-  color: "#f8fafc",
-} as const;
-
-const secondaryButtonStyle = {
-  ...baseButtonStyle,
-  background: "rgba(255,255,255,0.08)",
-  boxShadow: "0 10px 24px rgba(0,0,0,0.18)",
-} as const;
-
-const primaryButtonStyle = (disabled: boolean) =>
-  ({
-    ...baseButtonStyle,
-    background: disabled
-      ? "rgba(71,85,105,0.7)"
-      : "linear-gradient(135deg, #38bdf8 0%, #6366f1 100%)",
-    border: disabled ? "1px solid rgba(148,163,184,0.22)" : "1px solid rgba(99,102,241,0.35)",
-    boxShadow: disabled ? "none" : "0 14px 30px rgba(79,70,229,0.34)",
-    cursor: disabled ? "not-allowed" : "pointer",
-  }) as const;
-
-const markerDotStyle = {
-  width: 10,
-  height: 10,
-  borderRadius: "50%",
-  background: "rgba(255,255,255,0.98)",
-  boxShadow: "0 0 0 2px rgba(255,255,255,0.15), 0 0 16px rgba(255,255,255,0.28)",
-} as const;
-
-const pulseRingStyle = {
-  position: "absolute",
-  left: "50%",
-  top: "50%",
-  width: 14,
-  height: 14,
-  borderRadius: "50%",
-  border: "2px solid rgba(255,255,255,0.95)",
-  boxShadow: "0 0 18px rgba(255,255,255,0.22)",
-  animation: `markerPulse ${MARKER_ANIMATION_MS}ms ease-out forwards`,
-  pointerEvents: "none",
-  transform: "translate(-50%, -50%)",
-} as const;
-
-const tooltipStyle = {
-  position: "absolute",
-  left: "50%",
-  bottom: "calc(100% + 10px)",
-  transform: "translateX(-50%)",
-  whiteSpace: "nowrap",
-  padding: "7px 10px",
-  borderRadius: 10,
-  background: "rgba(15,23,42,0.92)",
-  color: "#f8fafc",
-  fontSize: 13,
-  fontWeight: 600,
-  border: "1px solid rgba(255,255,255,0.12)",
-  boxShadow: "0 10px 30px rgba(0,0,0,0.28)",
-  pointerEvents: "none",
-} as const;
