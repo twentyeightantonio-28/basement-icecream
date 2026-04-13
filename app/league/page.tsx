@@ -31,7 +31,7 @@ type RankTier = {
   image: string;
 };
 
-const ITEMS: Item[] = [
+const RAW_ITEMS = [
   { id: "Karthus", answers: ["karthus"], x: 33.1, y: 46.8, difficulty: "medium" },
   { id: "Rengar", answers: ["rengar"], x: 28.3, y: 80.1, difficulty: "hard" },
   { id: "Neeko", answers: ["neeko"], x: 19.1, y: 60.1, difficulty: "medium" },
@@ -122,7 +122,9 @@ const ITEMS: Item[] = [
   { id: "Ekko", answers: ["ekko"], x: 13.2, y: 17.8, difficulty: "medium" },
   { id: "Jhin", answers: ["jhin"], x: 89.2, y: 37.4, difficulty: "hard" },
   { id: "Kindred", answers: ["kindred"], x: 22.3, y: 29, difficulty: "superhard" },
-].map((item) => ({
+] satisfies Omit<Item, "splash">[];
+
+const ITEMS: Item[] = RAW_ITEMS.map((item) => ({
   ...item,
   splash: `/champions/${item.id
     .toLowerCase()
